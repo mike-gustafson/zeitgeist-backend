@@ -1,0 +1,28 @@
+Unit 3 project scratchpad:
+
+Requirements:
+
+Users create accounts
+ - saved in database
+
+Utilizes React Router
+
+Interacts with remote API
+ - some sort of data that's used on site
+
+Full CRUD in backend
+  Account:
+    Create	- Create Account
+    Read	- Pull information for account
+    Update  - Edit account details
+    Delete  - Remove account
+    
+    Pages needed
+      Sign-up
+      Sign-in
+      Recover
+      Delete Confirm
+      View Profile
+      Edit Profile
+
+ 

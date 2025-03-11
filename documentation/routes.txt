@@ -1,0 +1,194 @@
+VoteUp API Routes Documentation
+
+This document describes the RESTful endpoints for the VoteUp application backend. All routes requiring user context must include a valid JWT in the Authorization header (formatted as Bearer <token>).
+
+1. User Authentication & Account Management
+
+POST /auth/signup
+    Purpose: Register a new user.
+    Request Body:
+    {
+      "username": "exampleUser",
+      "email": "user@example.com",
+      "password": "securePassword"
+    }
+    Response:
+      - Success: Newly created user object and a JWT token.
+    {
+      "user": { "id": "123", "username": "exampleUser", "email": "user@example.com" },
+      "token": "JWT_TOKEN_HERE"
+    }
+POST /auth/login
+    Purpose: Authenticate a user and issue a JWT.
+    Request Body:
+    {
+      "email": "user@example.com",
+      "password": "securePassword"
+    }
+    Response:
+      - Success: User data and JWT token.
+    {
+      "user": { "id": "123", "username": "exampleUser", "email": "user@example.com" },
+      "token": "JWT_TOKEN_HERE"
+    }
+GET /auth/profile
+    Purpose: Retrieve the authenticated user's profile.
+    Headers:
+      - Authorization: Bearer <JWT_TOKEN>
+    Response:
+      - Success: User profile details, including voting history and preferences.
+PUT /auth/profile
+    Purpose: Update the authenticated user's profile.
+    Headers:
+      - Authorization: Bearer <JWT_TOKEN>
+    Request Body:
+    {
+      "username": "newUsername",
+      "preferences": { "categories": ["tech", "world"] }
+    }
+    Response:
+      - Success: Updated user profile object.
+
+
+
+2. Story Management
+
+GET /stories
+Purpose: Retrieve a list of stories.
+Query Parameters:
+  - Pagination: ?page=1&limit=20
+  - Sorting/filtering options (e.g., category, ranking score)
+Response:
+  - A list of story summaries, each containing:
+{
+  "id": "story_id",
+  "title": "Story Title",
+  "url": "https://example.com/story",
+  "description": "Short description...",
+  "voteCount": 25,
+  "submittedAt": "2025-03-02T12:00:00Z"
+}
+
+POST /stories
+Purpose: Submit a new story (either a user-submitted link or a curated entry).
+Headers:
+  - Authorization: Bearer <JWT_TOKEN>
+Request Body:
+{
+  "title": "Interesting News Story",
+  "url": "https://example.com/article",
+  "description": "A brief summary of the news story.",
+  "tags": ["tech", "innovation"]
+}
+Response:
+  - Success: The newly created story object.
+
+GET /stories/:id
+Purpose: Retrieve detailed information about a specific story.
+Response:
+  - Detailed story data including vote totals and associated comments.
+{
+  "id": "story_id",
+  "title": "Story Title",
+  "url": "https://example.com/story",
+  "description": "Detailed description...",
+  "voteCount": 25,
+  "submittedAt": "2025-03-02T12:00:00Z",
+  "comments": [ /* array of comment objects */ ]
+}
+
+PUT /stories/:id
+Purpose: Update an existing story (typically only allowed for the original submitter).
+Headers:
+  - Authorization: Bearer <JWT_TOKEN>
+Request Body (fields to update):
+{
+  "title": "Updated Story Title",
+  "description": "Updated description..."
+}
+Response:
+  - Success: The updated story object.
+
+DELETE /stories/:id
+Purpose: Delete a story (restricted to the submitter or an admin).
+Headers:
+  - Authorization: Bearer <JWT_TOKEN>
+Response:
+  - Success: Confirmation message.
+
+3. Vote Management
+
+POST /stories/:id/vote
+Purpose: Submit or update a vote on a story. Enforces one vote per user per story.
+Headers:
+  - Authorization: Bearer <JWT_TOKEN>
+Request Body:
+{
+  "vote": 1   // Use 1 for upvote, -1 for downvote. Optionally, vote: 0 could be used to remove the vote.
+}
+Response:
+  - Success: Updated vote count and user’s current vote status.
+{
+  "storyId": "story_id",
+  "voteCount": 26,
+  "userVote": 1
+}
+Note: The backend should check if a vote already exists for this user and story combination. If so, update the vote; otherwise, create a new record.
+
+4. Comment Management
+
+GET /stories/:id/comments
+Purpose: Retrieve all comments for a specific story.
+Response:
+  - A list of comments, each containing:
+{
+  "id": "comment_id",
+  "user": { "id": "user_id", "username": "exampleUser" },
+  "content": "This is a comment.",
+  "createdAt": "2025-03-02T12:30:00Z",
+  "replies": [ /* nested replies if applicable */ ]
+}
+
+POST /stories/:id/comments
+Purpose: Add a new comment to a story.
+Headers:
+  - Authorization: Bearer <JWT_TOKEN>
+Request Body:
+{
+  "content": "Great story, very insightful!"
+}
+Response:
+  - Success: The newly created comment object.
+
+PUT /stories/:id/comments/:commentId
+Purpose: Update an existing comment (only allowed for the comment author).
+Headers:
+  - Authorization: Bearer <JWT_TOKEN>
+Request Body:
+{
+  "content": "Updated comment content."
+}
+Response:
+  - Success: The updated comment object.
+
+DELETE /stories/:id/comments/:commentId
+Purpose: Delete a comment (only allowed for the comment author or an admin).
+Headers:
+  - Authorization: Bearer <JWT_TOKEN>
+Response:
+  - Success: A confirmation message indicating deletion.
+
+Additional Considerations
+
+- Middleware:
+  Use JWT verification middleware on protected routes to ensure only authenticated requests can modify data.
+
+- Rate Limiting & Caching:
+  Implement rate limiting on endpoints (especially for voting and comment submission) to prevent abuse.
+  Consider caching frequently accessed endpoints like GET /stories to improve performance.
+
+- Validation:
+  Validate request data (e.g., proper URL format for stories, content length for comments) to maintain data integrity.
+
+- Error Handling:
+  Standardize error responses (status codes and messages) across all routes.
