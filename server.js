@@ -2,10 +2,22 @@ const dotenv = require("dotenv");
 dotenv.config();
 
 const express = require("express");
-const app = express();
+const http = require("http");
+const socketIo = require("socket.io");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const logger = require("morgan");
+
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: {
+    origin: "http://127.0.0.1:5173",
+    methods: ["GET", "POST"]
+  }
+});
+
+app.set("io", io);
 
 const MONGODB_URI = process.env.MONGODB_URI;
 const PORT = process.env.PORT || 3000;
@@ -34,6 +46,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: err.message });
 });
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`App running on port ${PORT}!`);
 });
