@@ -1,14 +1,21 @@
 const { isObjectIdOrHexString } = require('mongoose');
 const Post = require('../models/Post');
-const Comment = require('../models/Post');
+const Comment = require('../models/Comment');
 const User = require('../models/User');
 const { populate } = require('../models/User');
 const Vote = require('../models/Vote');
+const { compareSync } = require('bcrypt');
 
 
 exports.getAllPosts = async (req, res) => {
     try {
-        const posts = await Post.find().populate('votes').populate('user', 'username')
+        const posts = await Post.find()
+          .populate('votes')
+          .populate('user', 'username')
+          .populate({
+            path: 'comments',
+            populate: { path: 'user', select: 'username' }
+          });
         let postsWithUserVote = posts;
         if (req.user && req.user._id) {
           postsWithUserVote = posts.map(post => {
@@ -87,6 +94,36 @@ exports.createPost = async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 };
+
+exports.createComment = async (req, res) => {
+    try {
+        const { text } = req.body;
+        if (!text) {
+        return res.status(400).json({ error: 'Comment text is required.' });
+        }
+
+        const comment = await Comment.create({
+        text,
+        user: req.user._id,
+        post: req.params.id
+        });
+        const post = await Post.findById(req.params.id);
+        post.comments.push(comment._id);
+        await post.save();
+        const comments = await Comment.find({ post: req.params.id })
+        .populate('user', 'username');
+        console.log('comments', comments)
+        const io = req.app.get('io');
+        if (io) {
+        req.app.get('io').emit('newComment', { comments: comments, postId: post._id });
+        }   
+    
+        return res.status(201).json({ comment });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: err.message });
+    }
+}
 
 exports.updatePost = async (req, res) => {
     try {
