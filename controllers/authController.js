@@ -57,3 +57,14 @@ exports.logout = async (req, res) => {
         res.status(500).json({ err: err.message });
     }
 }   
+
+exports.editUser = async (req, res) => {
+    try {
+        const user = await User.findByIdAndUpdate(req.user._id, req.body
+            , { new: true });
+        res.status(201).json({ user });
+    }
+    catch (err) {
+        res.status(500).json({ err: err.message });
+    }
+}
